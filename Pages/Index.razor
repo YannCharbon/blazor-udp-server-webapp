@@ -1,0 +1,527 @@
+﻿<!--
+    Author : Yann Charbon <yann.charbon@heig-vd.ch>, <yann.charbon@ik.me>
+    Date : 2022/27/06
+    Copyright (c) Yann Charbon
+-->
+
+@page "/"
+@using System;
+@using System.Net;
+@using System.Net.Sockets;
+@using System.Text;
+@using System.Threading;
+@using System.Net.NetworkInformation;
+
+@using QuikGraph;
+@using QuikGraph.Graphviz;
+@using QuikGraph.Data;
+
+@implements IDisposable;
+
+<PageTitle>Index</PageTitle>
+
+<style>
+.client-list{
+    background-color: #E0E0E0;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+    padding: 20px;
+    margin-bottom:20px;
+}
+
+.client-item-ip{
+    background-color: #090909;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.client-item{
+    background-color: #0000A0;
+    color: white;
+    border-radius: 10px;
+    padding:20px;
+    margin:5px;
+}
+
+.console{
+    background-color: #E0E0E0;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+    padding:20px;
+}
+
+.routing-diagram{
+    background-color: #E0E0E0;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+    padding: 20px;
+}
+
+.dot-yellow {
+  height: 25px;
+  width: 25px;
+  background-color: yellow;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot-gray {
+  height: 25px;
+  width: 25px;
+  background-color: gray;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.title-label {
+    font-weight: bold;
+    color: white;
+    padding:10px;
+    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+}
+</style>
+
+<div style="display: flex;">
+    <h1 style="padding-top:15px; padding-bottom:15px;">UDP server for Wi-SUN application</h1>
+    <img src="wi_sun_logo.png" alt="Wi-SUN" style="width:120px; height:70px; padding-left:20px;" />
+</div>
+
+<div style="height: 100%; width: 100%; display: flex;">
+    
+    <div width="50%" style="padding-left:5px;">
+        
+    </div>
+</div>
+
+<div>
+    <button class="btn btn-primary" @onclick="() => LedControl(true)">Turn all LEDs ON</button>
+    <button class="btn btn-primary" @onclick="() => LedControl(false)">Turn all LEDs OFF</button>
+    <button class="btn btn-danger" @onclick="() => DisconnectAllClient()">Disconnect all clients</button>
+    <button class="btn btn-primary" @onclick="() => RequestRoutingTableForAllNodes()">Get routing table</button>
+    <label class="label">
+        <div class="field">Multicast interface</div>
+        <select name="Multicast interface" id="multicast-if">
+@foreach(var iface in NetworkInterface.GetAllNetworkInterfaces()){
+            <option @onclick="() => SetMulticastInterface(iface.GetIPProperties().GetIPv6Properties().Index)">@iface.Name</option>
+}
+        </select>
+    </label>
+</div>
+
+<div class="title-label" style="margin-top:20px;">
+    <span>Client nodes</span>
+</div>
+<div class="client-list">
+    <div class="row">
+@foreach (IPEndPoint client in clientList){
+    <div class="col-md-4">
+        <div class="client-item">
+            <div class="row">
+                <div class="col-md-2">
+                    <span class="bi bi-wifi" style="font-size:40px;"></span>
+                </div>
+                <div class="col-md-2">
+                    <span class="client-item-ip">@client.Address</span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <button class="btn btn-success" @onclick="() => LedControl(client, true)">LED ON</button>
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-danger" @onclick="() => LedControl(client, false)">LED OFF</button>
+                </div>
+                <div class="col-md-4">
+                    @if (clientBtnStateList[clientList.IndexOf(client)] == true) {
+                    <span class="dot-yellow"></span>
+                    } else {
+                    <span class="dot-gray"></span>
+                    }
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-secondary" @onclick="() => RequestRoutingTable(client)">Get routing table</button>
+                </div>
+            </div>
+        </div>       
+    </div>
+}
+    </div>
+</div>
+
+<div class="row">    
+    <div class="col-md-5">
+        <div class="title-label">
+            <span>Console log</span>
+        </div>
+        <div class="console">
+            <div style="height:400px;width:100%;overflow:auto;padding:10px;">            
+                @foreach(string line in consoleText){
+                    @line<br />
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="title-label">
+            <span>Routing diagram</span>
+        </div>
+        <div class="routing-diagram">
+            @inject IJSRuntime JsRuntime
+            <div style="width:100%; heigth:auto;" @ref="_renderToDotDiagram"></div>
+        </div>   
+    </div>
+</div>
+
+<!--<button class="btn btn-primary" @onclick="() => SimNewClient()">Simulation new client</button>
+<button class="btn btn-primary" @onclick="() => SimButton()">Simulation button</button>
+<button class="btn btn-primary" @onclick="CreateGraph">Create Graph</button>-->
+
+
+@code {
+
+    private string udp_recv_data = "";
+
+    Thread threadUDPServer;
+    bool threadUDPServerAbortRequested = false;
+
+    List<IPEndPoint> clientList = new List<IPEndPoint>();
+    List<bool> clientBtnStateList = new List<bool>();
+
+    UdpClient udpsock;
+
+    List<string> consoleText = new List<string>();
+
+    System.Timers.Timer btnTimer = new System.Timers.Timer();
+
+    private ElementReference _renderToDotDiagram; 
+
+    public struct RPLnode{
+        public string nodeInterfaceID;
+        public string parentInterfaceID;
+    }
+
+    List<RPLnode> rplNodeList = new List<RPLnode>();
+
+    int multicastInterfaceIndex = 0;
+
+    private void SetMulticastInterface(int index){
+        multicastInterfaceIndex = index;
+        udpsock.DropMulticastGroup(IPAddress.Parse("ff05::7"));
+        udpsock.JoinMulticastGroup(multicastInterfaceIndex, IPAddress.Parse("ff05::7"));
+    }
+
+    private void UpdateClientList(){
+        Console.WriteLine("Client list");
+        foreach(IPEndPoint client in clientList){
+            Console.WriteLine("Client :" + client.Address);
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender) {
+        threadUDPServerAbortRequested = false;
+        
+        if(firstRender) {         
+            // Do work to load page data and set properties  
+            threadUDPServer = new Thread(threadUDPServerTask);
+            threadUDPServer.Start();
+        } 
+    }
+
+    public void threadUDPServerTask()
+    {
+        byte[] data = new byte[1024];
+        IPEndPoint ipep = new IPEndPoint(IPAddress.IPv6Any, 42555);
+        udpsock = new UdpClient(ipep);
+        udpsock.JoinMulticastGroup(multicastInterfaceIndex, IPAddress.Parse("ff05::7"));
+
+        log("Waiting for a client...");
+
+        IPEndPoint cli = new IPEndPoint(IPAddress.IPv6Any, 0);
+
+        while (!threadUDPServerAbortRequested)
+        {
+            try{
+                data = udpsock.Receive(ref cli);
+            } catch {}
+            
+            udp_recv_data = Encoding.ASCII.GetString(data, 0, data.Length);
+
+            if(udp_recv_data == "CONNECT_REQUEST"){
+                string response = "CONNECT_RESPONSE";
+                byte[] resp = Encoding.ASCII.GetBytes(response);
+                udpsock.Send(resp, resp.Length, cli);
+                if (addNewClient(cli) == 0){
+                    RequestRoutingTable(cli);
+                }                
+                InvokeAsync(() => StateHasChanged());
+            } else if (udp_recv_data == "BUTTON_INDICATION"){
+                HandleBtnPressed(cli);
+            } else if (udp_recv_data.Contains("ROUTING_RESPONSE")){
+                log("Received routing table");
+                RPLnode node = new RPLnode();
+                foreach(string line in udp_recv_data.Split(";")){
+                    if(line.Contains("src='Loopback'")){
+                        string nodeAddr = line.Split(new string[] {"a="},StringSplitOptions.None)[1]
+                                                .Split('/')[0]
+                                                .Trim();
+
+                        node.nodeInterfaceID = ExtractInterfaceIDFromIPAddress(nodeAddr);
+                    }
+                    if(line.Contains("src='RPL Instance'") && !line.Contains("src='RPL Root'")){
+                        string nextHopAddr = line.Split(new string[] {"nh="},StringSplitOptions.None)[1]
+                                                .Split(';')[0]
+                                                .Trim();
+
+                        log("Next hop address: " + nextHopAddr);
+
+                        node.parentInterfaceID = ExtractInterfaceIDFromIPAddress(nextHopAddr);
+                    }                    
+                }
+                
+                rplNodeList.Add(node);
+
+                UpdateRplDodag();
+            }
+
+            log(udp_recv_data);
+        }
+    }
+
+    public string ExtractInterfaceIDFromIPAddress(string addr){
+        string[] addrSplit = addr.Split(":");
+        int l = addrSplit.Length - 1;
+
+        return addrSplit[l-3] + ":" + addrSplit[l-2] + ":" + addrSplit[l-1] + ":" + addrSplit[l];
+    }
+
+    public void UpdateRplDodag(){
+
+        var graph = new AdjacencyGraph<string, Edge<string>>();
+
+        foreach(RPLnode node in rplNodeList){
+            if(!graph.ContainsVertex(node.parentInterfaceID)){
+                graph.AddVertex(node.parentInterfaceID);
+            }
+            if(!graph.ContainsVertex(node.nodeInterfaceID)){
+                graph.AddVertex(node.nodeInterfaceID);                
+            }            
+            if(!graph.ContainsEdge(node.parentInterfaceID, node.nodeInterfaceID)){
+                var edge = new TaggedEdge<string, string>(node.parentInterfaceID, node.nodeInterfaceID, "");
+                graph.AddEdge(edge);
+            }
+        }
+
+        string dotGraph = graph.ToGraphviz(algorithm =>
+        {
+            // Custom init example
+            algorithm.CommonVertexFormat.Font = new QuikGraph.Graphviz.Dot.GraphvizFont("Calibri", 12.0f);
+            algorithm.CommonVertexFormat.Shape = QuikGraph.Graphviz.Dot.GraphvizVertexShape.Box;
+            algorithm.CommonVertexFormat.FillColor = QuikGraph.Graphviz.Dot.GraphvizColor.BlueViolet;
+            algorithm.CommonVertexFormat.FontColor = QuikGraph.Graphviz.Dot.GraphvizColor.Black;
+            algorithm.CommonVertexFormat.Style = QuikGraph.Graphviz.Dot.GraphvizVertexStyle.Rounded;
+            algorithm.CommonVertexFormat.IsHtmlLabel = true;
+            algorithm.CommonVertexFormat.FixedSize = true;
+            algorithm.CommonVertexFormat.Size = new QuikGraph.Graphviz.Dot.GraphvizSizeF(2.0f, 0.7f);
+            algorithm.CommonEdgeFormat.ToolTip = "Edge tooltip";
+            algorithm.FormatVertex += (sender, args) =>
+            {
+                args.VertexFormat.Label = $"{args.Vertex}";
+            };
+        });
+
+        dotGraph = dotGraph.Insert(dotGraph.IndexOf("{") + 1, "graph [fontsize=6 fontname=\"Verdana\"] ranksep = \"0.7 equally\";");
+
+        log(dotGraph);
+
+        RenderDot(dotGraph);
+
+    }
+
+    public int addNewClient(IPEndPoint client){
+        if(!clientList.Contains(client)){
+            clientList.Add(client);
+            clientBtnStateList.Add(false);
+            log("Registered new client " + client.Address);
+            return 0;
+        } else {
+            log("Client " + client.Address + " is already registered. Skipping.");
+            return 1;
+        }        
+    }
+
+    public void DisconnectAllClient(){
+        string response = "DISCONNECT_INDICATION";
+        byte[] resp = Encoding.ASCII.GetBytes(response);
+
+        foreach(IPEndPoint cli in clientList){
+            udpsock.Send(resp, resp.Length, cli);  
+        }
+
+        clientList.Clear();
+        clientBtnStateList.Clear();
+        rplNodeList.Clear();
+
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    public void Dispose()
+    {
+        threadUDPServerAbortRequested = true;
+        try
+        {
+            log("Closing UDP socket...");
+            udpsock.Close();
+            log("Disposed");
+        } catch (Exception ex) {
+            log("Exception : " + ex.Message);
+        }
+
+    }
+
+    public void LedControl(bool state){
+        if(state){
+            string response = "LED_INDICATION;state=1";
+            byte[] resp = Encoding.ASCII.GetBytes(response);
+
+            foreach(IPEndPoint cli in clientList){
+                udpsock.Send(resp, resp.Length, cli);  
+            }
+
+        } else {
+            string response = "LED_INDICATION;state=0";
+            byte[] resp = Encoding.ASCII.GetBytes(response);
+
+            foreach(IPEndPoint cli in clientList){
+                udpsock.Send(resp, resp.Length, cli);  
+            }
+        }
+
+    }
+
+    public void LedControl(IPEndPoint cli, bool state){
+        if(state){
+            string response = "LED_INDICATION;state=1";
+            byte[] resp = Encoding.ASCII.GetBytes(response);
+
+            udpsock.Send(resp, resp.Length, cli);
+
+        } else {
+            string response = "LED_INDICATION;state=0";
+            byte[] resp = Encoding.ASCII.GetBytes(response);
+
+            udpsock.Send(resp, resp.Length, cli);
+        }
+
+    }
+
+    public void RequestRoutingTableForAllNodes(){
+        rplNodeList.Clear();
+        foreach(IPEndPoint cli in clientList){
+            RequestRoutingTable(cli);
+            Thread.Sleep(50);
+        }
+    }
+
+    public void RequestRoutingTable(IPEndPoint cli){
+        string response = "ROUTING_REQUEST";
+        byte[] resp = Encoding.ASCII.GetBytes(response);
+
+        udpsock.Send(resp, resp.Length, cli);
+    }
+
+    public void log(string line){
+        Console.WriteLine(line);
+        consoleText.Add(line);
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    int ip_idx = 0;
+
+    public void SimNewClient(){
+
+        string ip = "fe80::488f:bb56:717b:" + ip_idx++;
+
+        IPEndPoint cli = new IPEndPoint(IPAddress.Parse(ip), 42555);
+        addNewClient(cli);
+
+        InvokeAsync(() => StateHasChanged());
+    }
+
+    public void SimButton(){
+        HandleBtnPressed(clientList[0]);        
+    }
+
+    public void HandleBtnPressed(IPEndPoint client){
+        int idx = clientList.IndexOf(client);
+        clientBtnStateList[idx] = true;
+
+        InvokeAsync(() => StateHasChanged());
+
+        StartBtnTimer();
+    }
+
+    public void StartBtnTimer(){
+        btnTimer.Elapsed += BtnTimerEvent;
+        btnTimer.Interval = 1000;
+        btnTimer.Enabled = true;
+    }
+
+    private void BtnTimerEvent(object source, System.Timers.ElapsedEventArgs e){
+        for(int i = 0; i < clientBtnStateList.Count; i++){
+            clientBtnStateList[i] = false;
+        }
+
+        InvokeAsync(() => StateHasChanged());
+    }
+
+
+    private void CreateGraph(){
+        //var edges = new[] { new Edge<int>(1, 2), new Edge<int>(0,1) };
+        //var graph = edges.ToAdjacencyGraph<int, Edge<int>>();
+
+        var graph = new AdjacencyGraph<string, Edge<string>>();
+
+
+        string vertex1 = "Node A";
+        string vertex2 = "Node B";
+        string vertex3 = "Node C";
+
+        graph.AddVertex(vertex1);
+        graph.AddVertex(vertex2);
+        graph.AddVertex(vertex3);
+
+        var edge1 = new TaggedEdge<string, string>(vertex1, vertex2, "hello");
+        var edge2 = new TaggedEdge<string, string>(vertex1, vertex3, "hello");
+
+        graph.AddEdge(edge1);
+        graph.AddEdge(edge2);
+
+        string dotGraph = graph.ToGraphviz(algorithm =>
+        {
+            // Custom init example
+            algorithm.CommonVertexFormat.Shape = QuikGraph.Graphviz.Dot.GraphvizVertexShape.Box;
+            algorithm.CommonEdgeFormat.ToolTip = "Edge tooltip";
+            algorithm.FormatVertex += (sender, args) =>
+            {
+                args.VertexFormat.Label = $"{args.Vertex}";
+            };
+        });
+
+        log(dotGraph);
+
+        RenderDot(dotGraph);
+        
+        //log(dotGraph);
+    }
+
+    protected async Task RenderDot(string diagram)
+    {
+        var diagramModule = await JsRuntime
+            .InvokeAsync<IJSObjectReference>("import", "/diagrams.js");
+
+        await diagramModule.InvokeVoidAsync("renderDot", diagram, _renderToDotDiagram);
+    }
+
+}

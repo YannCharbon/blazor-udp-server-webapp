@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "M2lTx7ghxQDfS960F/pN4oVLstRMa/WxMyd62XxBhm+xVOWR03LTK7MX3kgmkMTmJHNgeSu513VTZbWKC1iKWg==",
+  "success": true,
+  "projectFilePath": "/home/yann/sunmesh/dotnet_apps/BlazorApp/BlazorApp.csproj",
+  "expectedPackageFiles": [
+    "/home/yann/.nuget/packages/quikgraph/2.3.0/quikgraph.2.3.0.nupkg.sha512",
+    "/home/yann/.nuget/packages/quikgraph.data/2.3.0/quikgraph.data.2.3.0.nupkg.sha512",
+    "/home/yann/.nuget/packages/quikgraph.graphviz/2.3.1/quikgraph.graphviz.2.3.1.nupkg.sha512"
+  ],
+  "logs": []
+}
