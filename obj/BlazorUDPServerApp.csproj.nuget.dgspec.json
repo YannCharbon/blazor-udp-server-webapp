@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/home/yann/sunmesh/dotnet_apps/BlazorApp/BlazorApp.csproj": {}
+    "/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/BlazorUDPServerApp.csproj": {}
   },
   "projects": {
-    "/home/yann/sunmesh/dotnet_apps/BlazorApp/BlazorApp.csproj": {
+    "/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/BlazorUDPServerApp.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/yann/sunmesh/dotnet_apps/BlazorApp/BlazorApp.csproj",
-        "projectName": "BlazorApp",
-        "projectPath": "/home/yann/sunmesh/dotnet_apps/BlazorApp/BlazorApp.csproj",
+        "projectUniqueName": "/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/BlazorUDPServerApp.csproj",
+        "projectName": "BlazorUDPServerApp",
+        "projectPath": "/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/BlazorUDPServerApp.csproj",
         "packagesPath": "/home/yann/.nuget/packages/",
-        "outputPath": "/home/yann/sunmesh/dotnet_apps/BlazorApp/obj/",
+        "outputPath": "/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/home/yann/.nuget/NuGet/NuGet.Config"

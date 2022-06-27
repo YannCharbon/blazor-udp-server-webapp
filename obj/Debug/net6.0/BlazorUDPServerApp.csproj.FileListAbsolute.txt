@@ -6,6 +6,9 @@
 /home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/bin/Debug/net6.0/BlazorUDPServerApp.runtimeconfig.json
 /home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/bin/Debug/net6.0/BlazorUDPServerApp.dll
 /home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/bin/Debug/net6.0/BlazorUDPServerApp.pdb
+/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/bin/Debug/net6.0/QuikGraph.dll
+/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/bin/Debug/net6.0/QuikGraph.Data.dll
+/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/bin/Debug/net6.0/QuikGraph.Graphviz.dll
 /home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/obj/Debug/net6.0/BlazorUDPServerApp.csproj.AssemblyReference.cache
 /home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/obj/Debug/net6.0/BlazorUDPServerApp.GeneratedMSBuildEditorConfig.editorconfig
 /home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/obj/Debug/net6.0/BlazorUDPServerApp.AssemblyInfoInputs.cache
@@ -20,12 +23,9 @@
 /home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/obj/Debug/net6.0/scopedcss/Shared/NavMenu.razor.rz.scp.css
 /home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/obj/Debug/net6.0/scopedcss/bundle/BlazorUDPServerApp.styles.css
 /home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/obj/Debug/net6.0/scopedcss/projectbundle/BlazorUDPServerApp.bundle.scp.css
+/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/obj/Debug/net6.0/BlazorUDPServerApp.csproj.CopyComplete
 /home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/obj/Debug/net6.0/BlazorUDPServerApp.dll
 /home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/obj/Debug/net6.0/refint/BlazorUDPServerApp.dll
 /home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/obj/Debug/net6.0/BlazorUDPServerApp.pdb
 /home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/obj/Debug/net6.0/BlazorUDPServerApp.genruntimeconfig.cache
 /home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/obj/Debug/net6.0/ref/BlazorUDPServerApp.dll
-/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/bin/Debug/net6.0/QuikGraph.dll
-/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/bin/Debug/net6.0/QuikGraph.Data.dll
-/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/bin/Debug/net6.0/QuikGraph.Graphviz.dll
-/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/obj/Debug/net6.0/BlazorUDPServerApp.csproj.CopyComplete
