@@ -57,6 +57,14 @@
     padding: 20px;
 }
 
+.control-menu{
+    margin-left: auto; 
+    margin-right: 0;
+    text-align: right;
+    background-color: #D0D0D0;
+    padding:10px;
+}
+
 .dot-yellow {
   height: 25px;
   width: 25px;
@@ -95,11 +103,13 @@
     </div>
 </div>
 
-<div>
+<div class="title-label" style="margin-top:20px;">
+    <span>Client nodes</span>
+</div>
+<div class="control-menu">
     <button class="btn btn-primary" @onclick="() => LedControl(true)">Turn all LEDs ON</button>
     <button class="btn btn-primary" @onclick="() => LedControl(false)">Turn all LEDs OFF</button>
     <button class="btn btn-danger" @onclick="() => DisconnectAllClient()">Disconnect all clients</button>
-    <button class="btn btn-primary" @onclick="() => RequestRoutingTableForAllNodes()">Get routing table</button>
     <label class="label">
         <div class="field">Multicast interface</div>
         <select name="Multicast interface" id="multicast-if">
@@ -108,10 +118,6 @@
 }
         </select>
     </label>
-</div>
-
-<div class="title-label" style="margin-top:20px;">
-    <span>Client nodes</span>
 </div>
 <div class="client-list">
     <div class="row">
@@ -155,6 +161,9 @@
         <div class="title-label">
             <span>Console log</span>
         </div>
+        <div class="control-menu">
+            <button class="btn btn-primary" @onclick="() => consoleText.Clear()">Clear</button>
+        </div>
         <div class="console">
             <div style="height:400px;width:100%;overflow:auto;padding:10px;">            
                 @foreach(string line in consoleText){
@@ -166,6 +175,9 @@
     <div class="col-md-6">
         <div class="title-label">
             <span>Routing diagram</span>
+        </div>
+        <div class="control-menu">
+            <button class="btn btn-primary" @onclick="() => RequestRoutingTableForAllNodes()">Update routing table</button>
         </div>
         <div class="routing-diagram">
             @inject IJSRuntime JsRuntime
