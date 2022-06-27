@@ -1,0 +1,10 @@
+/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/bin/Debug/net6.0/publish/BlazorUDPServerApp
+/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/bin/Debug/net6.0/publish/appsettings.Development.json
+/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/bin/Debug/net6.0/publish/appsettings.json
+/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/bin/Debug/net6.0/publish/BlazorUDPServerApp.dll
+/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/bin/Debug/net6.0/publish/BlazorUDPServerApp.deps.json
+/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/bin/Debug/net6.0/publish/BlazorUDPServerApp.runtimeconfig.json
+/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/bin/Debug/net6.0/publish/BlazorUDPServerApp.pdb
+/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/bin/Debug/net6.0/publish/QuikGraph.dll
+/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/bin/Debug/net6.0/publish/QuikGraph.Data.dll
+/home/yann/sunmesh/dotnet_apps/BlazorUDPServerApp/bin/Debug/net6.0/publish/QuikGraph.Graphviz.dll
