@@ -2,6 +2,8 @@
 
 This is a Blazor .NET Core UDP server application that is meant to be used with the [](https://github.com/YannCharbon/mbed-os-mesh-simple-udp-app) project. It allows to visualize all the Wi-SUN nodes inside the mesh network and to control them.
 
+![](./app_image_1.png)
+
 ## Usage
 ### Pre-compiled binaries
 
