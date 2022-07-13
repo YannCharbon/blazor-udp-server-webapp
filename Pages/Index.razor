@@ -11,6 +11,7 @@
 @using System.Text;
 @using System.Threading;
 @using System.Net.NetworkInformation;
+@using System.Diagnostics;
 
 @using QuikGraph;
 @using QuikGraph.Graphviz;
@@ -36,7 +37,8 @@
 }
 
 .client-item{
-    background-color: #0000A0;
+    /*background-color: #0000A0;*/
+    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
     color: white;
     border-radius: 10px;
     padding:20px;
@@ -89,6 +91,10 @@
     border-top-left-radius: 15px;
     border-top-right-radius: 15px;
 }
+
+.simple-padding{
+    padding:5px;
+}
 </style>
 
 <div style="display: flex;">
@@ -107,6 +113,7 @@
     <span>Client nodes</span>
 </div>
 <div class="control-menu">
+    <button class="btn btn-primary" @onclick="() => LedControlMulti()">Toggle all LEDs (multicast)</button>
     <button class="btn btn-primary" @onclick="() => LedControl(true)">Turn all LEDs ON</button>
     <button class="btn btn-primary" @onclick="() => LedControl(false)">Turn all LEDs OFF</button>
     <button class="btn btn-danger" @onclick="() => DisconnectAllClient()">Disconnect all clients</button>
@@ -133,21 +140,27 @@
                 </div>
             </div>
             <div class="row">
-                <div class="col-md-4">
+                <div class="col-md-4 simple-padding">
                     <button class="btn btn-success" @onclick="() => LedControl(client, true)">LED ON</button>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 simple-padding">
                     <button class="btn btn-danger" @onclick="() => LedControl(client, false)">LED OFF</button>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 simple-padding">
                     @if (clientBtnStateList[clientList.IndexOf(client)] == true) {
                     <span class="dot-yellow"></span>
                     } else {
                     <span class="dot-gray"></span>
                     }
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 simple-padding">
                     <button class="btn btn-secondary" @onclick="() => RequestRoutingTable(client)">Get routing table</button>
+                </div>
+                <div class="col-md-4 simple-padding">
+                    <button class="btn btn-secondary" @onclick="() => PerformSpeedTest(client)">Speed test</button>
+                </div>
+                <div class="col-md-4 simple-padding">
+                    <span width="50px">Speed : @clientSpeedList[clientList.IndexOf(client)] kB/s</span>
                 </div>
             </div>
         </div>       
@@ -200,6 +213,7 @@
 
     List<IPEndPoint> clientList = new List<IPEndPoint>();
     List<bool> clientBtnStateList = new List<bool>();
+    List<double> clientSpeedList = new List<double>();
 
     UdpClient udpsock;
 
@@ -217,6 +231,8 @@
     List<RPLnode> rplNodeList = new List<RPLnode>();
 
     int multicastInterfaceIndex = 0;
+
+    Stopwatch speedTestStopWatch = new Stopwatch();
 
     private void SetMulticastInterface(int index){
         multicastInterfaceIndex = index;
@@ -295,6 +311,13 @@
                 rplNodeList.Add(node);
 
                 UpdateRplDodag();
+            } else if(udp_recv_data.Contains("SPEED_TEST_REQUEST_RESPONSE;")){
+                speedTestStopWatch.Stop();
+                double throughput_kBps = Math.Round(data.Length * 2 / (speedTestStopWatch.ElapsedMilliseconds / 1.0), 2);
+                log("Speed test finished : " + throughput_kBps + " [kB/s]");
+                int idx = clientList.IndexOf(cli);
+                clientSpeedList[idx] = throughput_kBps;
+                InvokeAsync(() => StateHasChanged());
             }
 
             log(udp_recv_data);
@@ -355,6 +378,7 @@
         if(!clientList.Contains(client)){
             clientList.Add(client);
             clientBtnStateList.Add(false);
+            clientSpeedList.Add(0);
             log("Registered new client " + client.Address);
             return 0;
         } else {
@@ -373,6 +397,7 @@
 
         clientList.Clear();
         clientBtnStateList.Clear();
+        clientSpeedList.Clear();
         rplNodeList.Clear();
 
         InvokeAsync(() => StateHasChanged());
@@ -426,6 +451,13 @@
             udpsock.Send(resp, resp.Length, cli);
         }
 
+    }
+
+    public void LedControlMulti(){
+        string response = "BUTTON_INDICATION_MULTI";
+        byte[] resp = Encoding.ASCII.GetBytes(response);
+        IPEndPoint cli = new IPEndPoint(IPAddress.Parse("ff05::7"), 42555);
+        udpsock.Send(resp, resp.Length, cli);
     }
 
     public void RequestRoutingTableForAllNodes(){
@@ -534,6 +566,22 @@
             .InvokeAsync<IJSObjectReference>("import", "/diagrams.js");
 
         await diagramModule.InvokeVoidAsync("renderDot", diagram, _renderToDotDiagram);
+    }
+
+    public void PerformSpeedTest(IPEndPoint cli){
+        string response = "SPEED_TEST_REQUEST_RESPONSE;";
+        for(int i = 0; i < 1400; i++){
+            response += "1";
+            if(i % 100 == 0){
+                response += " ";
+            }
+        }
+        byte[] resp = Encoding.ASCII.GetBytes(response);
+
+        speedTestStopWatch.Reset();
+        speedTestStopWatch.Start();
+
+        udpsock.Send(resp, resp.Length, cli);
     }
 
 }
